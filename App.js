@@ -1,12 +1,4 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow strict-local
- */
-
-import React from 'react';
+import React, {useCallback, useMemo, useRef, useState, useEffect} from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -14,17 +6,91 @@ import {
   View,
   Text,
   StatusBar,
+  Button,
 } from 'react-native';
 
-import {
-  Header,
-  LearnMoreLinks,
-  Colors,
-  DebugInstructions,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+import {Colors} from 'react-native/Libraries/NewAppScreen';
 
-const App: () => React$Node = () => {
+const AVG_ORDER_TIME = 3000;
+
+const App = () => {
+  const [orderQueue, setOrderQueue] = useState([]);
+  const [readyQueue, setReadyQueue] = useState([]);
+
+  const keyRef = useRef(0);
+
+  const addCafe = useCallback(() => {
+    keyRef.current = keyRef.current + 1;
+    const key = keyRef.current;
+    setOrderQueue([
+      ...orderQueue,
+      {value: 'Cafe Au Lait', key: keyRef.current},
+    ]);
+    setTimeout(() => {
+      setReadyQueue([...readyQueue, {value: 'Cafe Au Lait', key}]);
+      setOrderQueue([...orderQueue.filter((item) => item.value !== key)]);
+      setTimeout(() => {
+        setReadyQueue([...readyQueue.filter((item) => item.value !== key)]);
+      }, AVG_ORDER_TIME);
+    }, 4000);
+  }, [orderQueue, readyQueue]);
+
+  const addCap = useCallback(() => {
+    keyRef.current = keyRef.current + 1;
+    const key = keyRef.current;
+    setOrderQueue([...orderQueue, {value: 'Cappuccino', key: keyRef.current}]);
+    setTimeout(() => {
+      setReadyQueue([...readyQueue, {value: 'Cappuccino', key}]);
+      setOrderQueue([...orderQueue.filter((item) => item.value !== key)]);
+    }, 10000);
+    setTimeout(() => {
+      setReadyQueue([...readyQueue.filter((item) => item.value !== key)]);
+    }, AVG_ORDER_TIME);
+  }, [orderQueue, readyQueue]);
+
+  const addExp = useCallback(() => {
+    keyRef.current = keyRef.current + 1;
+    const key = keyRef.current;
+    setOrderQueue([...orderQueue, {value: 'Expresso', key: keyRef.current}]);
+    setTimeout(() => {
+      setReadyQueue([...readyQueue, {value: 'Expresso', key}]);
+      setOrderQueue([...orderQueue.filter((item) => item.value !== key)]);
+      setTimeout(() => {
+        setReadyQueue([...readyQueue.filter((item) => item.value !== key)]);
+      }, AVG_ORDER_TIME);
+    }, 15000);
+  }, [orderQueue, readyQueue]);
+
+  const renderOrderQueue = useMemo(() => {
+    return orderQueue.length ? (
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionDescription}>Orders:</Text>
+        <View style={styles.orderQueue}>
+          {orderQueue.map((item) => (
+            <Text key={item.key} style={styles.sectionDescription}>
+              {item.value} #{item.key}
+            </Text>
+          ))}
+        </View>
+      </View>
+    ) : null;
+  }, [orderQueue]);
+
+  const renderReadyQueue = useMemo(() => {
+    return readyQueue.length ? (
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionDescription}>Ready For Pickup:</Text>
+        <View style={styles.orderQueue}>
+          {readyQueue.map((item) => (
+            <Text key={item.key} style={styles.sectionDescription}>
+              {item.value} #{item.key}
+            </Text>
+          ))}
+        </View>
+      </View>
+    ) : null;
+  }, [readyQueue]);
+
   return (
     <>
       <StatusBar barStyle="dark-content" />
@@ -32,39 +98,21 @@ const App: () => React$Node = () => {
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
           style={styles.scrollView}>
-          <Header />
-          {global.HermesInternal == null ? null : (
-            <View style={styles.engine}>
-              <Text style={styles.footer}>Engine: Hermes</Text>
-            </View>
-          )}
           <View style={styles.body}>
             <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Step One</Text>
               <Text style={styles.sectionDescription}>
-                Edit <Text style={styles.highlight}>App.js</Text> to change this
-                screen and then come back to see your edits.
+                Welcome. Select a drink to get started.
               </Text>
             </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>See Your Changes</Text>
-              <Text style={styles.sectionDescription}>
-                <ReloadInstructions />
-              </Text>
+            <View style={styles.container}>
+              <Button title="Cafe Au Lait" onPress={addCafe} />
+              <Button title="Cappuccino" onPress={addCap} />
+              <Button title="Expresso" onPress={addExp} />
             </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Debug</Text>
-              <Text style={styles.sectionDescription}>
-                <DebugInstructions />
-              </Text>
+            <View style={styles.menuInfo}>
+              {renderOrderQueue}
+              {renderReadyQueue}
             </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Learn More</Text>
-              <Text style={styles.sectionDescription}>
-                Read the docs to discover what to do next:
-              </Text>
-            </View>
-            <LearnMoreLinks />
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -84,8 +132,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+    marginTop: 100,
+    padding: 30,
+    backgroundColor: Colors.black,
+    flex: 1,
   },
   sectionTitle: {
     fontSize: 24,
@@ -96,7 +146,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 18,
     fontWeight: '400',
-    color: Colors.dark,
+    color: Colors.white,
   },
   highlight: {
     fontWeight: '700',
@@ -108,6 +158,19 @@ const styles = StyleSheet.create({
     padding: 4,
     paddingRight: 12,
     textAlign: 'right',
+  },
+  orderQueue: {
+    display: 'flex',
+    flexDirection: 'column',
+    backgroundColor: Colors.black,
+  },
+  picker: {
+    flex: 1,
+    width: '100%',
+  },
+  menuInfo: {
+    flex: 1,
+    flexDirection: 'row',
   },
 });
 
